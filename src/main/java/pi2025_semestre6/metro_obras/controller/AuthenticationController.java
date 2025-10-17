@@ -1,0 +1,60 @@
+package pi2025_semestre6.metro_obras.controller;
+
+import pi2025_semestre6.metro_obras.dto.LoginRequestDTO;
+import pi2025_semestre6.metro_obras.dto.LoginResponseDTO;
+import pi2025_semestre6.metro_obras.dto.RegisterRequestDTO;
+import pi2025_semestre6.metro_obras.model.Usuario;
+import pi2025_semestre6.metro_obras.repository.UsuarioRepository;
+import pi2025_semestre6.metro_obras.service.TokenService;
+import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthenticationController {
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private TokenService tokenService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO data) {
+        var usernamePassword = new UsernamePasswordAuthenticationToken(data.email(), data.senha());
+        var auth = this.authenticationManager.authenticate(usernamePassword);
+
+        var token = tokenService.generateToken((Usuario) auth.getPrincipal());
+
+        return ResponseEntity.ok(new LoginResponseDTO(token));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequestDTO data) {
+        if (this.usuarioRepository.findByEmail(data.email()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Este e-mail já está em uso.");
+        }
+
+        String encryptedPassword = passwordEncoder.encode(data.senha());
+        Usuario newUser = new Usuario(null, data.email(), encryptedPassword);
+
+        this.usuarioRepository.save(newUser);
+
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+}
