@@ -50,8 +50,19 @@ public class AuthenticationController {
                     .body("Este e-mail já está em uso.");
         }
 
+        if (this.usuarioRepository.findByCpf(data.cpf()) != null) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("Este CPF já está cadastrado.");
+        }
+
         String encryptedPassword = passwordEncoder.encode(data.senha());
-        Usuario newUser = new Usuario(null, data.email(), encryptedPassword);
+        Usuario newUser = new Usuario(
+                data.name(),
+                data.email(),
+                encryptedPassword,
+                data.cpf(),
+                data.role()
+        );
 
         this.usuarioRepository.save(newUser);
 
