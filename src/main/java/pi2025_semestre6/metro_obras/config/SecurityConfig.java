@@ -36,6 +36,25 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         // Permite acesso ao H2 Console em ambiente de desenvolvimento
                         .requestMatchers("/h2-console/**").permitAll()
+
+                        //obras
+                        // somente um admin pode criar uma obra
+                        .requestMatchers(HttpMethod.POST, "/obras").hasRole("ADMIN_GLOBAL")
+
+                        // qualquer usuario autenticado pode fazer GET
+                        .requestMatchers(HttpMethod.GET, "/obras", "/obras/**").authenticated()
+
+                        //usuarios
+                        // somente pode ver se estiver autenticado
+                        .requestMatchers(HttpMethod.GET, "/usuarios").authenticated()
+
+                        // imagens
+                        // qualquer usuario autenticado pode criar (adicionar) ou deletar imagens
+                        .requestMatchers("/imagens", "/imagens/**").authenticated()
+
+                        //relatorio
+                        .requestMatchers("/relatorios", "/relatorios/**").authenticated()
+
                         .anyRequest().authenticated() // Todas as outras requisições exigem autenticação
                 )
                 // Adiciona nosso filtro customizado antes do filtro padrão do Spring
