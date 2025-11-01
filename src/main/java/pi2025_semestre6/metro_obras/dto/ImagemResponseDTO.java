@@ -8,12 +8,14 @@ import java.time.Instant;
 // nao retornamos o base64 por ser um dado muito grande
 public record ImagemResponseDTO(
         Long id,
+        String base64,
         Long obraId,
         Instant created_at
 ) {
     public ImagemResponseDTO(Imagem imagem) {
         this(
                 imagem.getId(),
+                imagem.getBase64(),
                 imagem.getObra().getId(),
                 imagem.getCreated_at()
         );
