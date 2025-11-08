@@ -30,21 +30,19 @@ public class RelatorioController {
     @Autowired
     private ObraRepository obraRepository;
 
-    // REQUISITO: "Create"
+    // Criar novo relatório
     @PostMapping
     public ResponseEntity<RelatorioResponseDTO> createRelatorio(
             @RequestBody RelatorioCreateDTO data,
-            @AuthenticationPrincipal Usuario usuarioLogado // Pega o usuario do token
+            @AuthenticationPrincipal Usuario usuarioLogado
     ) {
-        // encontrar a Obra
         Obra obra = obraRepository.findById(data.obraId())
                 .orElse(null);
 
         if (obra == null) {
-            return ResponseEntity.notFound().build(); // Obra não encontrada
+            return ResponseEntity.notFound().build();
         }
 
-        // criar e salvar o Relatório (usuario vem do token)
         Relatorio novoRelatorio = new Relatorio(
                 data.name(),
                 data.base64(),
@@ -53,11 +51,11 @@ public class RelatorioController {
         );
         Relatorio relatorioSalvo = relatorioRepository.save(novoRelatorio);
 
-        // retornar o DTO de resposta
-        return ResponseEntity.status(HttpStatus.CREATED).body(new RelatorioResponseDTO(relatorioSalvo));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new RelatorioResponseDTO(relatorioSalvo));
     }
 
-    // Delete
+    // Deletar relatório
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRelatorio(@PathVariable Long id) {
         if (!relatorioRepository.existsById(id)) {
@@ -67,19 +65,20 @@ public class RelatorioController {
         return ResponseEntity.noContent().build();
     }
 
-    // Get com filtro por data (created_at)
-    @GetMapping
-    public ResponseEntity<List<RelatorioResponseDTO>> getRelatorios(
-            // Recebe a data no formato AAAA-MM-DD
+    // Buscar relatórios por obra e data
+    @GetMapping("/por-obra-e-data")
+    public ResponseEntity<List<RelatorioResponseDTO>> getRelatoriosPorObraEData(
+            @RequestParam(name = "obraId") Long obraId,
             @RequestParam(name = "data") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
     ) {
-        // converte a data (ex: 2025-10-27) para um intervalo de Instant (dia inteiro)
+        if (!obraRepository.existsById(obraId)) {
+            return ResponseEntity.notFound().build();
+        }
+
         Instant startOfDay = data.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant endOfDay = data.atTime(LocalTime.MAX).atZone(ZoneId.systemDefault()).toInstant();
 
-        // busca no repositorio
-        var relatorios = relatorioRepository.findByCreatedAtBetween(startOfDay, endOfDay);
-
+        var relatorios = relatorioRepository.findByObraIdAndCreatedAtBetween(obraId, startOfDay, endOfDay);
         var relatoriosDTO = relatorios.stream()
                 .map(RelatorioResponseDTO::new)
                 .toList();
@@ -87,7 +86,7 @@ public class RelatorioController {
         return ResponseEntity.ok(relatoriosDTO);
     }
 
-    // listar relatorio por obra
+    // Buscar relatórios por obra
     @GetMapping("/por-obra")
     public ResponseEntity<List<RelatorioResponseDTO>> getRelatoriosPorObra(
             @RequestParam(name = "obraId") Long obraId
@@ -100,5 +99,26 @@ public class RelatorioController {
                 .map(RelatorioResponseDTO::new)
                 .toList();
         return ResponseEntity.ok(relatoriosDTO);
+    }
+
+    // ✅ Novo endpoint: Buscar o relatório mais recente de uma obra
+    @GetMapping("/mais-recente")
+    public ResponseEntity<RelatorioResponseDTO> getRelatorioMaisRecente(
+            @RequestParam(name = "obraId") Long obraId
+    ) {
+        if (!obraRepository.existsById(obraId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Busca o último relatório (ordenado por createdAt desc)
+        Relatorio relatorio = relatorioRepository
+                .findTopByObraIdOrderByCreatedAtDesc(obraId)
+                .orElse(null);
+
+        if (relatorio == null) {
+            return ResponseEntity.noContent().build(); // Nenhum relatório encontrado
+        }
+
+        return ResponseEntity.ok(new RelatorioResponseDTO(relatorio));
     }
 }
