@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/obras").hasRole("ADMIN_GLOBAL")
                         .requestMatchers(HttpMethod.GET, "/obras", "/obras/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/obras/**").hasRole("ADMIN_GLOBAL")
                         .requestMatchers(HttpMethod.GET, "/usuarios").authenticated()
                         .requestMatchers("/imagens", "/imagens/**").authenticated()
                         .requestMatchers("/relatorios", "/relatorios/**").authenticated()
