@@ -1,5 +1,6 @@
 package pi2025_semestre6.metro_obras.controller;
 
+import org.springframework.web.bind.annotation.*;
 import pi2025_semestre6.metro_obras.dto.LoginRequestDTO;
 import pi2025_semestre6.metro_obras.dto.LoginResponseDTO;
 import pi2025_semestre6.metro_obras.dto.RegisterRequestDTO;
@@ -12,10 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
@@ -68,4 +65,16 @@ public class AuthenticationController {
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+    @GetMapping("/validate")
+    public ResponseEntity<?> validate(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String subject = tokenService.validateToken(token);
+
+        if (subject == null || subject.isEmpty()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        return ResponseEntity.ok().build();
+    }
+
 }
